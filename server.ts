@@ -136,6 +136,28 @@ app.post("/api/problems", async (req, res) => {
   }
 });
 
+app.delete("/api/problems/:id", async (req, res) => {
+  try {
+    await pool.query("DELETE FROM problems WHERE id = $1", [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.post("/api/admin/clear-database", async (req, res) => {
+  try {
+    // Delete all data except admin user
+    await pool.query("DELETE FROM cheaters");
+    await pool.query("DELETE FROM submissions");
+    await pool.query("DELETE FROM problems");
+    await pool.query("DELETE FROM users WHERE role != 'admin'");
+    res.json({ success: true, message: "Database cleared successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // Submissions
 app.post("/api/submit", async (req, res) => {
   try {
