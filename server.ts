@@ -147,11 +147,10 @@ app.delete("/api/problems/:id", async (req, res) => {
 
 app.post("/api/admin/clear-database", async (req, res) => {
   try {
-    // Delete all data except admin user
+    // Delete all data but keep all user accounts
     await pool.query("DELETE FROM cheaters");
     await pool.query("DELETE FROM submissions");
     await pool.query("DELETE FROM problems");
-    await pool.query("DELETE FROM users WHERE role != 'admin'");
     res.json({ success: true, message: "Database cleared successfully" });
   } catch (error) {
     res.status(500).json({ error: "Server error" });
