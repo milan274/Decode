@@ -18,7 +18,9 @@ import {
   CheckCircle2,
   X,
   Eye,
-  Terminal
+  Terminal,
+  Trash2,
+  Database
 } from 'lucide-react';
 
 // --- Types ---
@@ -202,6 +204,7 @@ const AuthPage = ({ onLogin }: { onLogin: (user: User) => void }) => {
 const AdminDashboard = ({ user }: { user: User }) => {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null);
@@ -232,6 +235,24 @@ const AdminDashboard = ({ user }: { user: User }) => {
     fetchProblems();
   };
 
+  const handleDeleteProblem = async (e: React.MouseEvent, problemId: number) => {
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this problem? All submissions and cheating data will be lost.')) {
+      await fetch(`/api/problems/${problemId}`, { method: 'DELETE' });
+      fetchProblems();
+      if (selectedProblem?.id === problemId) {
+        setSelectedProblem(null);
+      }
+    }
+  };
+
+  const handleClearDatabase = async () => {
+    await fetch('/api/admin/clear-database', { method: 'POST' });
+    setShowClearConfirm(false);
+    fetchProblems();
+    alert('Database cleared successfully!');
+  };
+
   const handleViewProblem = async (problem: Problem) => {
     setSelectedProblem(problem);
     const [subRes, cheatRes] = await Promise.all([
@@ -249,13 +270,22 @@ const AdminDashboard = ({ user }: { user: User }) => {
           <h2 className="text-4xl font-bold text-white tracking-tight mb-2 italic serif">Admin Panel</h2>
           <p className="text-zinc-500">Manage coding challenges and monitor integrity.</p>
         </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]"
-        >
-          <Plus size={20} />
-          New Problem
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setShowClearConfirm(true)}
+            className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+          >
+            <Database size={20} />
+            Clear Database
+          </button>
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+          >
+            <Plus size={20} />
+            New Problem
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -263,17 +293,25 @@ const AdminDashboard = ({ user }: { user: User }) => {
           <motion.div 
             key={p.id}
             whileHover={{ y: -5 }}
-            onClick={() => handleViewProblem(p)}
-            className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl cursor-pointer hover:border-emerald-500/50 transition-all group"
+            className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl cursor-pointer hover:border-emerald-500/50 transition-all group relative"
           >
-            <div className="flex justify-between items-start mb-4">
-              <div className="w-10 h-10 bg-zinc-800 rounded-lg flex items-center justify-center group-hover:bg-emerald-500/10 transition-colors">
-                <FileText className="text-zinc-400 group-hover:text-emerald-500" size={20} />
+            <button
+              onClick={(e) => handleDeleteProblem(e, p.id)}
+              className="absolute top-4 right-4 p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-lg transition-all opacity-0 group-hover:opacity-100 z-10"
+              title="Delete problem"
+            >
+              <Trash2 size={16} />
+            </button>
+            <div onClick={() => handleViewProblem(p)}>
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-10 h-10 bg-zinc-800 rounded-lg flex items-center justify-center group-hover:bg-emerald-500/10 transition-colors">
+                  <FileText className="text-zinc-400 group-hover:text-emerald-500" size={20} />
+                </div>
+                <ChevronRight className="text-zinc-600 group-hover:text-emerald-500 transition-colors" size={20} />
               </div>
-              <ChevronRight className="text-zinc-600 group-hover:text-emerald-500 transition-colors" size={20} />
+              <h3 className="text-xl font-bold text-white mb-2">{p.title}</h3>
+              <p className="text-zinc-500 text-sm line-clamp-2">{p.description}</p>
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">{p.title}</h3>
-            <p className="text-zinc-500 text-sm line-clamp-2">{p.description}</p>
           </motion.div>
         ))}
       </div>
@@ -334,6 +372,51 @@ const AdminDashboard = ({ user }: { user: User }) => {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Clear Database Confirmation Modal */}
+      <AnimatePresence>
+        {showClearConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowClearConfirm(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-md bg-zinc-900 border border-red-500/50 rounded-2xl p-8 shadow-2xl"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="text-red-500" size={24} />
+                </div>
+                <h3 className="text-2xl font-bold text-white">Clear Database?</h3>
+              </div>
+              <p className="text-zinc-400 mb-6">
+                This will permanently delete all problems, submissions, cheating data, and non-admin users. This action cannot be undone!
+              </p>
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setShowClearConfirm(false)}
+                  className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleClearDatabase}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                >
+                  Clear Database
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
