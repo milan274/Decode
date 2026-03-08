@@ -401,7 +401,7 @@ const AdminDashboard = ({ user }: { user: User }) => {
                 <h3 className="text-2xl font-bold text-white">Clear Database?</h3>
               </div>
               <p className="text-zinc-400 mb-6">
-                This will permanently delete all problems, submissions, cheating data, and non-admin users. This action cannot be undone!
+                This will permanently delete all problems, submissions, and cheating data. User accounts will be preserved. This action cannot be undone!
               </p>
               <div className="flex gap-4">
                 <button 
